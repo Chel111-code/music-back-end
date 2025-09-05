@@ -1,10 +1,10 @@
-// require('dotenv').config();
+require('dotenv').config();
 
 const Hapi = require('@hapi/hapi');
 const notes = require('./api/music');
-const MusicsService = require('./services/inMemory/SongsService');
+const MusicsService = require('./services/postgres/MusicsService');
 const NotesValidator = require('./validator/musics');
-const ClientError = require('./exceptions/ClientError'); // pastikan path ini benar
+const ClientError = require('./exceptions/ClientError'); //
 
 const init = async () => {
   const musicService = new MusicsService();
