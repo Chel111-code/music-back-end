@@ -1,13 +1,39 @@
 require('dotenv').config();
 
 const Hapi = require('@hapi/hapi');
-const notes = require('./api/music');
+const Jwt = require('@hapi/jwt');
+
+const ClientError = require('./exceptions/ClientError');
+
+const music = require('./api/music');
 const MusicsService = require('./services/postgres/MusicsService');
-const NotesValidator = require('./validator/musics');
-const ClientError = require('./exceptions/ClientError'); //
+const MusicsValidator = require('./validator/musics');
+const SongsService = require('./services/postgres/MusicsService');
+
+const users = require('./api/users');
+const UsersService = require('./services/postgres/UsersService');
+const UsersValidator = require('./validator/users');
+
+const authentications = require('./api/authentications');
+const AuthenticationsService = require('./services/postgres/AuthenticationsService');
+const TokenManager = require('./tokenize/TokenManager');
+const AuthenticationsValidator = require('./validator/authentications');
+
+const playlists = require('./api/playlists');
+const PlaylistsService = require('./services/postgres/PlaylistsServices');
+const PlaylistsValidator = require('./validator/playlists');
+
+const collaborations = require('./api/collaborations');
+const CollaborationsService = require('./services/postgres/CollaborationsService');
+const CollaborationsValidator = require('./validator/collaborations');
 
 const init = async () => {
-  const musicService = new MusicsService();
+  const collaborationsService = new CollaborationsService();
+  const playlistsService = new PlaylistsService(collaborationsService);
+  const usersService = new UsersService();
+  const authenticationsService = new AuthenticationsService();
+  const musicsService = new MusicsService();
+  const songsService = new SongsService();
 
   const server = Hapi.server({
     port: process.env.PORT,
@@ -19,15 +45,70 @@ const init = async () => {
     },
   });
 
-  await server.register({
-    plugin: notes,
-    options: {
-      service: musicService,
-      validator: NotesValidator,
+  await server.register([
+    {
+      plugin: Jwt,
     },
+  ]);
+
+  server.auth.strategy('songsapp_jwt', 'jwt', {
+    keys: process.env.ACCESS_TOKEN_KEY,
+    verify: {
+      aud: false,
+      iss: false,
+      sub: false,
+      maxAgeSec: process.env.ACCESS_TOKEN_AGE,
+    },
+    validate: (artifacts) => ({
+      isValid: true,
+      credentials: {
+        id: artifacts.decoded.payload.id,
+      },
+    }),
   });
 
-  // Middleware untuk error handling
+  await server.register([
+    {
+      plugin: music,
+      options: {
+        service: musicsService,
+        validator: MusicsValidator,
+      },
+    },
+    {
+      plugin: users,
+      options: {
+        service: usersService,
+        validator: UsersValidator,
+      },
+    },
+    {
+      plugin: authentications,
+      options: {
+        authenticationsService,
+        usersService,
+        tokenManager: TokenManager,
+        validator: AuthenticationsValidator,
+      },
+    },
+    {
+      plugin: playlists,
+      options: {
+        service: playlistsService,
+        songsService,
+        validator: PlaylistsValidator,
+      },
+    },
+    {
+      plugin: collaborations,
+      options: {
+        collaborationsService,
+        playlistsService,
+        validator: CollaborationsValidator,
+      },
+    },
+  ]);
+
   server.ext('onPreResponse', (request, h) => {
     const { response } = request;
 
@@ -44,7 +125,7 @@ const init = async () => {
   });
 
   await server.start();
-  console.log(`Server berjalan pada ${server.info.host}:${server.info.port}`);
+  console.log(`Server berjalan pada ${server.info.uri}`);
 };
 
 init();

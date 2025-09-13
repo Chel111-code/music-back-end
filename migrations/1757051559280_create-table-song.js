@@ -4,8 +4,8 @@
 export const shorthands = undefined;
 
 /**
- * @param pgm {import('node-pg-migrate').MigrationBuilder}
- * @param run {() => void | undefined}
+ * @param pgm
+ * @param run
  * @returns {Promise<void> | void}
  */
 export const up = (pgm) => {
@@ -40,8 +40,8 @@ export const up = (pgm) => {
 };
 
 /**
- * @param pgm {import('node-pg-migrate').MigrationBuilder}
- * @param run {() => void | undefined}
+ * @param pgm
+ * @param run }
  * @returns {Promise<void> | void}
  */
 export const down = (pgm) => {

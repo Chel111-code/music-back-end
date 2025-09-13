@@ -3,13 +3,13 @@ const { nanoid } = require('nanoid');
 const InvariantError = require('../../exceptions/InvariantError');
 const NotFoundError = require('../../exceptions/NotFoundError');
 const { mapDBToAlbumModel, mapDBToSongModel } = require('../../utils');
+// const AuthenticationError = require('../../exceptions/AuthenticationError');
 
 class MusicService {
   constructor() {
     this._pool = new Pool();
   }
 
-  // ================= ALBUM =================
   async addAlbum({ name, year }) {
     const id = `album-${nanoid(16)}`;
     const query = {
